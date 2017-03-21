@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # dbdump
 
 
@@ -13,3 +14,6 @@ Useful for when a quick database dump is required, just enter the user account d
 
 
 
+=======
+# dbdump
+>>>>>>> 06c7a973b0f48a84e608c587f130cb58d9e32c30
