@@ -46,7 +46,6 @@ Example 2: allowing bob access with the password 1234 and joe access with passwo
 Constructor
 
 *******************/
-
 dbDump::Init(array(
 	'users'	=> array(
 		array('username'=>'bob','password'=>'81dc9bdb52d04dc20036dbd8313ed055'),
@@ -56,6 +55,7 @@ dbDump::Init(array(
 		return md5($pass);
 	}
 ));
+
 
 
 
@@ -287,8 +287,6 @@ final class dbDump{
 			'logoH'		=> '115',
 			'force'		=> true,
 			));
-
-		die($out);
 
 
 		return $out.'</ul>';
