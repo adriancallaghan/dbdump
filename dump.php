@@ -46,6 +46,7 @@ Example 2: allowing bob access with the password 1234 and joe access with passwo
 Constructor
 
 *******************/
+
 dbDump::Init(array(
 	'users'	=> array(
 		array('username'=>'bob','password'=>'81dc9bdb52d04dc20036dbd8313ed055'),
@@ -55,7 +56,6 @@ dbDump::Init(array(
 		return md5($pass);
 	}
 ));
-
 
 
 
@@ -208,80 +208,94 @@ final class dbDump{
 		<span class='glyphicon glyphicon-download'></span>&nbsp;Download</button></div></div>";
 
 
-
-		
-
 		$form.= "</form>";
 
 
 		return $form;
 	}
 
-	protected function getPlatforms(){
+	protected function getPlatform($options){
 
-		$out 			= '<ul class="list-group">';
-		$wordpressConf	= 'wp-config.php';
-		$wordpressLogo  = '<img src="https://s.w.org/about/images/logos/wordpress-logo-32-blue.png" alt="WordPress logo" longdesc="WordPress Logo Stacked">';
-		$c5Conf			= 'config/site.php';
-		$c5Logo  		= '<img src="https://www.concrete5.org/files/3613/5517/8150/concrete5_Wordmark_200x37.png" alt="C5 logo" longdesc="C5 Logo Stacked">';
-		$mysqlLogo      = '<img src="https://www.mysql.com/common/logos/logo-mysql-170x115.png" alt="mysql logo" longdesc="Mysql Logo stacked">';
 		$error          = '<div class="pull-right text-warning"><span class="glyphicon glyphicon-warning-sign status"></span></div>';
 		$notFound       = '<div class="pull-right text-danger"><span class="glyphicon glyphicon-remove status"></span></div>';
 		$found          = '<div class="pull-right text-success"><span class="glyphicon glyphicon-ok status"></span></div>';
+		$out			= '<li class="list-group-item">';
+		$logoW			= isset($options->logoW) ? $options->logoW : '213';
+		$logoH          = isset($options->logoH) ? $options->logoH : '120';
+		$logo 			= "<img src='".(isset($options->logo) ? $options->logo : "holder.js/{$logoW}x{$logoH}")."' height='{$logoH}' width='{$logoW}' alt='platform logo' longdesc='logo representing the platform option' />";
+		$dbArgs 		= new StdClass(); 
 
-
-		$out.= '<li class="list-group-item">';
-		if (file_exists($wordpressConf)){
-
-			if (($fp = fopen($wordpressConf, "r"))!==false){
-				$params = $this->getDefinitions(stream_get_contents($fp));
-	      		$out.= $found.$wordpressLogo.$this->generateDbForm((object) array(
-	      			'host'		=> isset($params['DB_HOST']) 		? $params['DB_HOST'] 		: '',
-	      			'table'		=> isset($params['DB_NAME']) 		? $params['DB_NAME'] 	: '',
-	      			'username'	=> isset($params['DB_USER']) 		? $params['DB_USER'] 	: '',
-	      			'password' 	=> isset($params['DB_PASSWORD']) 	? $params['DB_PASSWORD'] 	: '',
-	      		));
+		if (isset($options->conf) && file_exists($options->conf)){
+			if (($fp 	= fopen($options->conf, "r"))!==false){
+				$params = (object) $this->getDefinitions(stream_get_contents($fp)); 
+				foreach(array('host','table','username','password') AS $option){
+						$dbArgs->{$option} = isset($options->{$option}) && isset($params->{$options->{$option}}) ? $params->{$options->{$option}} : '';
+				}				
+	      		$out	.= $found.$logo.$this->generateDbForm($dbArgs, isset($options->force) ? $options->force : null);
 	      		fclose($fp);
 	      	} else {
-	      		$out.= $error.$wordpressLogo;
+	      		$out	.= $error.$logo.$this->generateDbForm(null, isset($options->force) ? $options->force : null);
 	      	}
 		} else {
-			$out.= $notFound.$wordpressLogo;
+			$out		.= $notFound.$logo.$this->generateDbForm(null, isset($options->force) ? $options->force : null);
 		}
 		$out.= '</li>';
 
+		return $out;
 
-		$out.= '<li class="list-group-item">';
-		if (file_exists($c5Conf)){
+	}
 
-			if (($fp = fopen($c5Conf, "r"))!==false){
-				$params = $this->getDefinitions(stream_get_contents($fp));
-	      		$out.= $found.$c5Logo.$this->generateDbForm((object) array(
-	      			'host'		=> isset($params['DB_SERVER']) 		? $params['DB_SERVER'] 		: '',
-	      			'table'		=> isset($params['DB_DATABASE']) 	? $params['DB_DATABASE'] 	: '',
-	      			'username'	=> isset($params['DB_USERNAME']) 	? $params['DB_USERNAME'] 	: '',
-	      			'password' 	=> isset($params['DB_PASSWORD']) 	? $params['DB_PASSWORD'] 	: '',
-	      		));
-	      		fclose($fp);
-	      	} else {
-	      		$out.= $error.$c5Logo;
-	      	}
-		} else {
-			$out.= $notFound.$c5Logo;
-		}
-		$out.= '</li>';
+	protected function getPlatforms(){
 
+		$out 			= '<ul class="list-group">';
+		$out			.= $this->getPlatform((object) array(
+			'conf'		=> 'wp-config.php',
+			'logo'		=> 'https://s.w.org/about/images/logos/wordpress-logo-32-blue.png',
+			'logoW'		=> '32',
+			'logoH'		=> '32',
+			'host'		=> 'DB_HOST',
+	      	'table'		=> 'DB_NAME',
+	      	'username'	=> 'DB_USER',
+	      	'password' 	=> 'DB_PASSWORD'
+			));
 
-		$out.= '<li class="list-group-item">';
-		$out.= $found.$mysqlLogo.$this->generateDbForm(null, true);
-		$out.= '</li>';
+		$out			.= $this->getPlatform((object) array(
+			'conf'		=> 'config/site.php',
+			'logo'		=> 'https://www.concrete5.org/files/3613/5517/8150/concrete5_Wordmark_200x37.png',
+			'logoW'		=> '200',
+			'logoH'		=> '37',
+			'host'		=> 'DB_SERVER',
+	      	'table'		=> 'DB_DATABASE',
+	      	'username'	=> 'DB_USERNAME',
+	      	'password' 	=> 'DB_PASSWORD'
+			));
+
+		/*$out			.= $this->getPlatform((object) array(
+			'conf'		=> 'config/autoload/local.php',
+			'logo'		=> 'http://clloh.com/wp-content/uploads/2015/08/zf2-logo-128x128.png',
+			'logoW'		=> '128',
+			'logoH'		=> '128',
+			'host'		=> 'DB_SERVER',
+	      	'table'		=> 'DB_DATABASE',
+	      	'username'	=> 'DB_USERNAME',
+	      	'password' 	=> 'DB_PASSWORD'
+			));*/
+
+		$out			.= $this->getPlatform((object) array(
+			'logo'		=> 'https://www.mysql.com/common/logos/logo-mysql-170x115.png',
+			'logoW'		=> '170',
+			'logoH'		=> '115',
+			'force'		=> true,
+			));
+
+		die($out);
 
 
 		return $out.'</ul>';
 	}
 
 	protected function getHeader(){
-		return '<html><head><title>Restricted area</title><link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script><META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW"><style>.col-vert-20{margin-top:20px;}.col-vert-100{margin-top:100px;}.status{font-size:30px;}</style></head><body><div class="container-fluid"><div class="row">';
+		return '<html><head><title>Restricted area</title><link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/holder/2.9.4/holder.js"></script><META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW"><style>.col-vert-20{margin-top:20px;}.col-vert-100{margin-top:100px;}.status{font-size:30px;}</style></head><body><div class="container-fluid"><div class="row">';
 	}
 
 	protected function getFooter(){
@@ -495,7 +509,7 @@ final class dbDump{
 
     private function __construct(array $options = null)
     {     
-    	// env vars
+    	// env
     	set_time_limit(20);
 
         if (is_array($options)) {
